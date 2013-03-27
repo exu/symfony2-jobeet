@@ -10,6 +10,7 @@ use Ens\JobeetBundle\Utils\Jobeet;
  *
  * @ORM\Table()
  * @ORM\Entity(repositoryClass="Ens\JobeetBundle\Entity\CategoryRepository")
+ * @ORM\HasLifecycleCallbacks
  */
 class Category
 {
@@ -156,7 +157,8 @@ class Category
     }
 
     /**
-     * @ORM\prePersist
+     * @ORM\PrePersist
+     * @ORM\PreUpdate
      */
     public function setSlugValue()
     {
