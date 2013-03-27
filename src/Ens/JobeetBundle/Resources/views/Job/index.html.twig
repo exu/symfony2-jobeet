@@ -1,0 +1,34 @@
+{% extends 'EnsJobeetBundle::layout.html.twig' %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('bundles/ensjobeet/css/jobs.css') }}" type="text/css" media="all" />
+{% endblock %}
+
+{% block content %}
+  <div id="jobs">
+    {% for category in categories %}
+      <div>
+        <div class="category">
+          <div class="feed">
+            <a href="">Feed</a>
+          </div>
+          <h1><a href="{{ path('EnsJobeetBundle_category', { 'slug': category.slug }) }}">{{ category.name }}</a></h1>
+        </div>
+        <table class="jobs">
+          {% for entity in category.activejobs %}
+            <tr class="{{ cycle(['even', 'odd'], loop.index) }}">
+              <td class="location">{{ entity.location }}</td>
+              <td class="position">
+                <a href="{{ path('job_show', { 'id': entity.id, 'company': entity.companyslug, 'location': entity.locationslug, 'position': entity.positionslug }) }}">
+                  {{ entity.position }}
+                </a>
+              </td>
+              <td class="company">{{ entity.company }}</td>
+            </tr>
+          {% endfor %}
+        </table>
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}

@@ -1,0 +1,5 @@
+ens_jobeet:
+    resource: "@EnsJobeetBundle/Controller/"
+    type:     annotation
+    prefix:   /
+
