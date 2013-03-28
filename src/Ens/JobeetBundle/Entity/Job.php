@@ -5,6 +5,8 @@ namespace Ens\JobeetBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Ens\JobeetBundle\Utils\Jobeet;
 
+use Symfony\Component\Validator\Constraints as Assert;
+
 /**
  * job
  *
@@ -133,6 +135,13 @@ class Job
      * @ORM\ManyToOne(targetEntity="Category", inversedBy="jobs")
      */
     private $category;
+
+
+    /**
+     * @Assert\Image()
+     */
+    public $file;
+
 
     /**
      * Get id
@@ -334,9 +343,11 @@ class Job
      * @param string $token
      * @return job
      */
-    public function setToken($token)
+    public function setToken()
     {
-        $this->token = $token;
+        if (!$this->getToken()) {
+            $this->token = sha1($this->getEmail().rand(11111, 99999));
+        }
 
         return $this;
     }
@@ -512,26 +523,21 @@ class Job
         return $this->category;
     }
 
-    /**
-     * @ORM\PrePersist
-     */
-    public function onPrePersist()
+    public function isExpired()
     {
-        $this->createdAt = new \DateTime();
-        if (!$this->expiresAt) {
-            $now = $this->getCreatedAt() ? $this->getCreatedAt()->format('U') : time();
-            $this->expiresAt = new \DateTime(date('Y-m-d H:i:s', $now + 86400 * 30));
-        }
+        return $this->getDaysBeforeExpires() < 0;
     }
 
-
-    /**
-     * @ORM\PreUpdate()
-     */
-    public function onPreUpdate()
+    public function expiresSoon()
     {
-        $this->updatedAt = new \DateTime();
+        return $this->getDaysBeforeExpires() < 5;
     }
+
+    public function getDaysBeforeExpires()
+    {
+        return ceil(($this->getExpiresAt()->format('U') - time()) / 86400);
+    }
+
 
     public function getCompanySlug()
     {
@@ -546,5 +552,135 @@ class Job
     public function getLocationSlug()
     {
         return Jobeet::slugify($this->getLocation());
+    }
+
+    public function getFile()
+    {
+        return $this->file;
+    }
+
+    /*
+     * Setter for file
+     */
+    public function setFile($file)
+    {
+        $this->file = $file;
+        return $this;
+    }
+
+
+
+
+
+
+    /**
+     * @ORM\PrePersist
+     */
+    public function onPrePersist()
+    {
+        $this->createdAt = new \DateTime();
+        if (!$this->expiresAt) {
+            $now = $this->getCreatedAt() ? $this->getCreatedAt()->format('U') : time();
+            $this->expiresAt = new \DateTime(date('Y-m-d H:i:s', $now + 86400 * 30));
+        }
+        $this->updatedAt = new \DateTime();
+    }
+
+    /**
+     * @ORM\PreUpdate()
+     */
+    public function onPreUpdate()
+    {
+        $this->updatedAt = new \DateTime();
+    }
+
+    /**
+     * @ORM\PostPersist()
+     */
+    public function onPostPersist()
+    {
+        $this->upload();
+    }
+
+    /**
+     * @ORM\PostUpdate()
+     */
+    public function onPostUpdate()
+    {
+        $this->upload();
+    }
+
+    /**
+     * @ORM\PostRemove()
+     */
+    public function onPostRemove()
+    {
+    }
+
+    /**
+     * @ORM\PrePersist()
+     */
+    public function preUpload()
+    {
+        if (null !== $this->file) {
+            // do whatever you want to generate a unique name
+            $this->logo = uniqid().'.'.$this->file->guessExtension();
+        }
+    }
+
+    /**
+     * @ORM\PostPersist()
+     * @ORM\PostUpdate()
+     */
+    public function upload()
+    {
+        if (!isset($this->file)) {
+            return;
+        }
+
+        if (!is_object($this->file)) {
+            return;
+        }
+
+        $this->file->move($this->getUploadRootDir(), $this->logo);
+        unset($this->file);
+    }
+
+    /**
+     * @ORM\postRemove
+     */
+    public function removeUpload()
+    {
+        if ($file = $this->getAbsolutePath()) {
+            unlink($file);
+        }
+    }
+
+
+
+    /**
+     * File upload methods
+     */
+
+
+
+    protected function getUploadDir()
+    {
+        return 'uploads/jobs';
+    }
+
+    protected function getUploadRootDir()
+    {
+        return __DIR__.'/../../../../web/'.$this->getUploadDir();
+    }
+
+    public function getWebPath()
+    {
+        return null === $this->logo ? null : $this->getUploadDir().'/'.$this->logo;
+    }
+
+    public function getAbsolutePath()
+    {
+        return null === $this->logo ? null : $this->getUploadRootDir().'/'.$this->logo;
     }
 }

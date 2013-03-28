@@ -6,6 +6,10 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolverInterface;
 
+use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Validator\Constraints\Email;
+
 class JobType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options)
@@ -22,19 +26,34 @@ class JobType extends AbstractType
             ->add('token')
             ->add('isPublic')
             ->add('isActivated')
-            ->add('email')
-            ->add('expiresAt')
-            ->add('createdAt')
-            ->add('updatedAt')
+            ->add(
+                'email',
+                'email',
+                array(
+                    'constraints' => array(
+                        new NotBlank(),
+                        new Email()
+                    )
+                )
+            )
             ->add('category')
-        ;
+            ->add(
+                'file',
+                'file',
+                array(
+                    'label' => 'Company logo',
+                    'required' => false,
+                )
+            );
     }
 
     public function setDefaultOptions(OptionsResolverInterface $resolver)
     {
-        $resolver->setDefaults(array(
-            'data_class' => 'Ens\JobeetBundle\Entity\Job'
-        ));
+        $resolver->setDefaults(
+            array(
+                'data_class' => 'Ens\JobeetBundle\Entity\Job'
+            )
+        );
     }
 
     public function getName()
